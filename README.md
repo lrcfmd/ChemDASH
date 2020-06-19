@@ -432,3 +432,8 @@ Full List of Input Options
 | vasp_pp_setups                    | Pseudopotential file extensions for each element.                                                                                                                                                                                                                                                                                                                                                                                                                |                        |
 | vasp_settings                     | Settings for all VASP calculations. Default: None.                                                                                                                                                                                                                                                                                                                                                                                                               |                        |
 | verbosity                         | Controls the level of detail in the output. Valid options are: "verbose", "terse". Default: "verbose"                                                                                                                                                                                                                                                                                                                                                            |                        |
+
+Acknowledgements
+================
+
+We acknowledge funding from the EPSRC Programme Grant: EP/N004884/1 "Integration of Computation and Experiment for Accelerated Materials Discovery"
