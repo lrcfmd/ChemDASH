@@ -31,7 +31,7 @@ directory, ChemDASH is run by typing:
 
       python chemdash <basename>
 
-where <basename> is the
+where <span>$\left\langle basename \right\rangle$</span> is the
 basename of both the “.atoms” and “.input” files. The output of the
 calculation is written to the file
 “<span>$\left\langle \text{basename} \right\rangle$</span>.chemdash”. If
