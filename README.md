@@ -2,7 +2,7 @@
 Chemically Directed Atom Swap Hopping -- Crystal structure prediction by swapping atoms in unfavourable chemical environments.
 
 Acknowledgements
-================
+----------------
 
 We acknowledge funding from the EPSRC Programme Grant: EP/N004884/1 "Integration of Computation and Experiment for Accelerated Materials Discovery"
 
