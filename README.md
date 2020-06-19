@@ -4,7 +4,7 @@ Chemically Directed Atom Swap Hopping -- Crystal structure prediction by swappin
 Introduction
 ============
 
-ChemDASH is a crystal structure prediction code developed at the
+ChemDASH is a crystal structure prediction code written by Paul Sharp and developed at the
 University of Liverpool. ChemDASH is written in python 3.5+, and depends
 on the atomic simulation environment (ASE), spglib, and their subsequent dependencies. ChemDASH implements
 the basin hopping method to explore the potential energy surface, with
