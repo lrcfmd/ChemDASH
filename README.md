@@ -31,14 +31,11 @@ directory, ChemDASH is run by typing:
 
       python chemdash <basename>
 
-where \<basename> <span>$\left\langle basename \right\rangle$</span> is the
-basename of both the “.atoms” and “.input” files. The output of the
-calculation is written to the file
-“<span>$\left\langle \text{basename} \right\rangle$</span>.chemdash”. If
-there are errors in either the “.atoms” or the “.input” files, then the
-calculation is stopped, with errors listed in the file
-“<span>$\left\langle \text{basename} \right\rangle$</span>.error”. To
-restart a ChemDASH run, with a restart file present, run with
+where \<basename> is the basename of both the “.atoms” and “.input” files.
+The output of the calculation is written to the file “\<basename>.chemdash”.
+If there are errors in either the “.atoms” or the “.input” files, then the
+calculation is stopped, with errors listed in the file “\<basename>.error”.
+To restart a ChemDASH run, with a restart file present, run with
 “restart=True” in the input file.\
 \
 ChemDASH does not have to be installed in the working directory, in this
@@ -194,9 +191,9 @@ There are three possible initialisation grids in ChemDASH:
 the “grid\_type” input option. There are two more input options that
 need to be considered. Firstly “grid\_points” is used to specify the
 number of grid points on the **ANION** sublattice. This can be input as
-a single number for an $a\times a \times a$ grid, two comma–separated
-numbers to give an $a\times a \times c$ grid, or three comma–separated
-numbers to give an $a\times b \times c$ grid. Secondly, “cell\_spacing”
+a single number for an $a \times a \times a$ grid, two comma–separated
+numbers to give an $a \times a \times c$ grid, or three comma–separated
+numbers to give an $a \times b \times c$ grid. Secondly, “cell\_spacing”
 is used to specify the distance between anion points on the
 initialisation grid, this is specified in the same format as the anion
 grid points.
