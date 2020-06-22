@@ -249,19 +249,17 @@ The filepath of the GULP executable should be given as
 “gulp\_executable” in the input file. The keywords to be applied to
 **ALL** stages of the gulp calculation are listed in the ChemDASH input
 file as “gulp\_keywords”, whilst keywords to apply to a particular stage
-of the calculation are given as
-“gulp\_calc\_<span>$\left\langle \text{number} \right\rangle$</span>\_keywords”
+of the calculation are given as “gulp\_calc\_\<number>\_keywords”
 (e.g., “gulp\_calc\_1\_keywords”). Similarly, for GULP options we use
-“gulp\_options” for all stages and
-“gulp\_calc\_<span>$\left\langle \text{number} \right\rangle$</span>\_options”
+“gulp\_options” for all stages and “gulp\_calc\_\<number>\_options”
 for a particular stage in the ChemDASH input file. Both keywords and
 options are given as comma–separated lists. When optimising using GULP,
 it is possible to terminate the calculation if the gnorm is above a
 certain value after a particular stage by giving a value for
-“gulp\_calc\_<span>$\left\langle \text{number} \right\rangle$</span>\_max\_gnorm”.
+“gulp\_calc\_\<number>\_max\_gnorm”.
 
 For each GULP calculation, the GULP output files are saved as
-“structure\_<span>$\left\langle \text{number} \right\rangle$</span>\_<span>$\left\langle \text{stage} \right\rangle$</span>.<span>$\left\langle \text{gin|got|res} \right\rangle$</span>”.
+“structure\_\<number>\_\<stage>.\<gin|got|res>”.
 The strings for each stage are given as a comma–separated list in the
 ChemDASH input option “gulp\_files”. GULP uses force fields to optimise
 structures, the file containing the forcefield for the calculation is
@@ -280,14 +278,11 @@ The filepath of the VASP executable should be given as
 “vasp\_executable” in the input file. The settings to be applied to
 **ALL** stages of the VASP calculation are listed in the ChemDASH input
 file as “vasp\_settings”, whilst settings to apply to a particular stage
-of the calculation are given as
-“vasp\_calc\_<span>$\left\langle \text{number} \right\rangle$</span>\_settings”
+of the calculation are given as “vasp\_calc\_\<number>\_settings”
 (e.g., “vasp\_calc\_1\_settings”). The settings required for this input
 into ChemDASH are the contents of a VASP INCAR file. The format for VASP
 settings is that of a python dictionary, which consists of a
-comma–separated list of
-“<span>$\left\langle \text{key} \right\rangle$</span>:<span>$\left\langle \text{value} \right\rangle$</span>”
-pairs. For example,
+comma–separated list of “\<key>:\<value>” pairs. For example,
 
      vasp_settings=xc:PBE, prec:Normal, encut:600
 
