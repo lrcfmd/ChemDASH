@@ -1,6 +1,8 @@
 # ChemDASH
 Chemically Directed Atom Swap Hopping -- Crystal structure prediction by swapping atoms in unfavourable chemical environments.
 
+Please note that this is not the DASH software for structure solution from powder diffraction data, which is developed by the Cambridge Crystallographic Data Centre and is available at: https://www.ccdc.cam.ac.uk/dash
+
 Acknowledgements
 ----------------
 
