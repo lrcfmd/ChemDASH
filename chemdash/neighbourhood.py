@@ -18,7 +18,10 @@
 
 from builtins import range
 
-import chemdash.gulp_calc
+try:
+    import chemdash.gulp_calc
+except ModuleNotFoundError:
+    import gulp_calc
 
 import ase
 import ase.io
