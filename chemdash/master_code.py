@@ -45,15 +45,27 @@ import ase.io
 
 import numpy as np
 
-import chemdash.bonding as bonding
-import chemdash.gulp_calc as gulp_calc
-import chemdash.initialise as initialise
-import chemdash.inputs as inputs
-import chemdash.neighbourhood as neighbourhood
-import chemdash.rngs as rngs
-import chemdash.swap as swap 
-import chemdash.symmetry as symmetry
-import chemdash.vasp_calc as vasp_calc
+try:
+    import chemdash.bonding as bonding
+except:
+    import bonding
+    import gulp_calc
+    import initialise 
+    import inputs
+    import neighbourhood 
+    import rngs 
+    import swap  
+    import symmetry
+    import vasp_calc
+else:
+    import chemdash.gulp_calc as gulp_calc
+    import chemdash.initialise as initialise
+    import chemdash.inputs as inputs
+    import chemdash.neighbourhood as neighbourhood
+    import chemdash.rngs as rngs
+    import chemdash.swap as swap 
+    import chemdash.symmetry as symmetry
+    import chemdash.vasp_calc as vasp_calc
 
 
 # =============================================================================
