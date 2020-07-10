@@ -47,7 +47,7 @@ import numpy as np
 
 try:
     import chemdash.bonding as bonding
-except:
+except ModuleNotFoundError:
     import bonding
     import gulp_calc
     import initialise 
