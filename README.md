@@ -95,6 +95,7 @@ libraries:
       os
       re
       shutil
+      spglib
       subprocess
       sys
       time
