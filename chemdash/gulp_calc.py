@@ -28,6 +28,7 @@
 |                                                                             |
 |-----------------------------------------------------------------------------|
 | Paul Sharp 27/03/2020                                                       |
+| Chris Collins 26/11/2020                                                    |
 |=============================================================================|
 """
 
@@ -43,6 +44,7 @@ import ase
 import math
 import numpy as np
 import os
+import platform
 import re
 import subprocess
 import time
@@ -355,16 +357,23 @@ def set_gulp_command(executable, num_cores, time_limit, gulp_library):
 
     ---------------------------------------------------------------------------
     Paul Sharp 03/08/2018
+    Chris Collins 26/11/2020
     """
 
-    os.environ["GULP_LIB"] = ""
+    if platform.system() == 'Windows':
+        os.environ["ASE_GULP_COMMAND"] = str(executable + " < PREFIX.gin > PREFIX.got")
 
-    if num_cores > 1:
-        #os.environ["ASE_GULP_COMMAND"] = "timeout " + str(time_limit) + " mpirun -np " + str(num_cores) + " " + executable + " < PREFIX.gin > PREFIX.got"
-        os.environ["ASE_GULP_COMMAND"] = "timeout --kill-after=5 " + str(time_limit) + " mpirun -np " + str(num_cores) + " " + executable + " < PREFIX.gin > PREFIX.got"
-    else:
-        #os.environ["ASE_GULP_COMMAND"] = "timeout " + str(time_limit) + " " + executable + " < PREFIX.gin > PREFIX.got"
-        os.environ["ASE_GULP_COMMAND"] = "timeout --kill-after=5 " + str(time_limit) + " " + executable + " < PREFIX.gin > PREFIX.got"
+    if platform.system() == 'Linux':
+        
+        os.environ["GULP_LIB"] = ""
+        
+        if num_cores > 1:
+            #os.environ["ASE_GULP_COMMAND"] = "timeout " + str(time_limit) + " mpirun -np " + str(num_cores) + " " + executable + " < PREFIX.gin > PREFIX.got"
+            os.environ["ASE_GULP_COMMAND"] = "timeout --kill-after=5 " + str(time_limit) + " mpirun -np " + str(num_cores) + " " + executable + " < PREFIX.gin > PREFIX.got"
+        else:
+            #os.environ["ASE_GULP_COMMAND"] = "timeout " + str(time_limit) + " " + executable + " < PREFIX.gin > PREFIX.got"
+            os.environ["ASE_GULP_COMMAND"] = "timeout --kill-after=5 " + str(time_limit) + " " + executable + " < PREFIX.gin > PREFIX.got"
+    
 
     return None
 
@@ -803,12 +812,18 @@ def check_timed_out(gulp_out_file):
 
     ---------------------------------------------------------------------------
     Paul Sharp 10/12/2019
+    Chris Collins 26/11/2020
     """
 
     finished_marker = "Job Finished"
     terminated_marker = "Program terminated"
 
-    final_lines = subprocess.check_output(["tail", "-2", gulp_out_file]).decode()
+    if platform.system() == 'Linux':
+    	 final_lines = subprocess.check_output(["tail", "-2", gulp_out_file]).decode()
+    
+    if platform.system() == 'Windows':
+    	 temp=open(gulp_out_file).readlines()
+    	 final_lines=temp[:-2]
 
     timed_out = True
     if (finished_marker in final_lines) or (terminated_marker in final_lines):
