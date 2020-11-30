@@ -27,7 +27,7 @@
 |     populate_points_with_vacancies                                          |
 |                                                                             |
 |-----------------------------------------------------------------------------|
-| Paul Sharp 27/03/2020                                                       |
+| Paul Sharp 30/11/2020                                                       |
 | Chris Collins 26/11/2020                                                    |
 |=============================================================================|
 """
@@ -811,7 +811,7 @@ def check_timed_out(gulp_out_file):
         True if calculation timed out.
 
     ---------------------------------------------------------------------------
-    Paul Sharp 10/12/2019
+    Paul Sharp 30/11/2020
     Chris Collins 26/11/2020
     """
 
@@ -820,10 +820,14 @@ def check_timed_out(gulp_out_file):
 
     if platform.system() == 'Linux':
     	 final_lines = subprocess.check_output(["tail", "-2", gulp_out_file]).decode()
-    
-    if platform.system() == 'Windows':
-    	 temp=open(gulp_out_file).readlines()
-    	 final_lines=temp[:-2]
+
+    elif platform.system() == 'Windows':
+    	 text = open(gulp_out_file).readlines()
+    	 final_lines = ''.join(text[-3:])
+    	 
+    else:
+        
+        final_lines = ""
 
     timed_out = True
     if (finished_marker in final_lines) or (terminated_marker in final_lines):
