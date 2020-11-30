@@ -7,6 +7,7 @@ import ase
 from ase.calculators.gulp import GULP
 import numpy as np
 import os
+import platform
 import subprocess
 
 #===========================================================================================================================================================
@@ -615,7 +616,7 @@ def test_check_float(value, expected_output):
     ''', True),
 ])
 
-def test_check_timed_out(test_final_lines, expected_output, monkeypatch):
+def test_check_timed_out_linux(test_final_lines, expected_output, monkeypatch):
     """
     GIVEN a gulp output file 
 
@@ -626,17 +627,63 @@ def test_check_timed_out(test_final_lines, expected_output, monkeypatch):
     Parameters
     ----------
     test_final_lines : byte str
-        A string used as a mock of the gulp output file.
+        A string used as a mock of the gulp output file (check_output returns byte strings).
 
     ---------------------------------------------------------------------------
-    Paul Sharp 17/01/2020
+    Paul Sharp 30/11/2020
     """
 
+    monkeypatch.setattr(platform, 'system', lambda : 'Linux')
     monkeypatch.setattr(subprocess, 'check_output', lambda x : test_final_lines)
 
     assert chemdash.gulp_calc.check_timed_out("") == expected_output
 
 
+#===========================================================================================================================================================
+@pytest.mark.parametrize("test_final_lines,  expected_output", [
+    ('''  Job Finished at 16:46.01  8th November   2017                               
+    
+    ''', False),
+    ('''  Program terminated at 16:46.01  8th November   2017                               
+    
+    ''', False),
+    ('''**** Too many failed attempts to optimise ****                  
+    
+    ''', True),
+])
+
+def test_check_timed_out_windows(test_final_lines, expected_output, monkeypatch):
+    """
+    GIVEN a gulp output file 
+
+    WHEN we check if the calculation timed out
+
+    THEN we get a logical set according to whether or not the calculation timed out
+
+    Parameters
+    ----------
+    test_final_lines : str
+        A string used as a mock of the gulp output file.
+
+    ---------------------------------------------------------------------------
+    Paul Sharp 30/11/2020
+    """
+
+    monkeypatch.setattr(platform, 'system', lambda : 'Windows')
+    
+    # We need to ensure we use "mock_open" to return our test data instead of reading a file
+    # We also need to ensure that the return value of this Mock produces an iterable,
+    # so we can loop over the lines of the file
+    iterable_mock_file = mock.mock_open(read_data = test_final_lines)
+    iterable_mock_file.return_value.__iter__ = lambda x : iter(x.readline, '')
+
+    # Note the lack of lambda -- we want the mock itself, not its return value
+    # We pass a blank string for the file argument for this reason
+    monkeypatch.setattr('builtins.open', iterable_mock_file)
+    
+    assert chemdash.gulp_calc.check_timed_out("") == expected_output
+    
+    
 #===========================================================================================================================================================
 @pytest.mark.parametrize("test_gulp_output,  expected_output", [
     (''' **** Optimisation Achieved ****''', 'Optimisation Achieved'),
