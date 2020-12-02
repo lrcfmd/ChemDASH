@@ -100,6 +100,12 @@ libraries:
       sys
       time
       yaml
+      
+These libraries can all be installed at once by typing
+
+      pip install -r requirements.txt
+      
+at the command line.
 
 Atoms File
 ----------
