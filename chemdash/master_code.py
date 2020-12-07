@@ -1252,9 +1252,10 @@ def read_restart_file(restart_file):
 
     ---------------------------------------------------------------------------
     Paul Sharp 10/04/2019
+    Chris Collins 07/12/20
     """
 
-    with np.load(restart_file) as restart_data:
+    with np.load(restart_file, allow_pickle=True) as restart_data:
 
         best_structure = restart_data["best_structure"][()]
         current_structure = restart_data["current_structure"][()]
