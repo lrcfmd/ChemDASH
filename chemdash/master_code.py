@@ -1252,7 +1252,7 @@ def read_restart_file(restart_file):
 
     ---------------------------------------------------------------------------
     Paul Sharp 10/04/2019
-    Chris Collins 07/12/20
+    Chris Collins 07/12/2020
     """
 
     with np.load(restart_file, allow_pickle=True) as restart_data:
