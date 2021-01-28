@@ -27,7 +27,7 @@
 |     populate_points_with_vacancies                                          |
 |                                                                             |
 |-----------------------------------------------------------------------------|
-| Paul Sharp 30/11/2020                                                       |
+| Paul Sharp 28/01/2021                                                       |
 | Chris Collins 26/11/2020                                                    |
 |=============================================================================|
 """
@@ -35,6 +35,7 @@
 from builtins import range
 from builtins import str
 
+from ase.calculators.gulp import Conditions
 try:
     from ase.calculators.gulp import GULP
 except ImportError:
@@ -108,7 +109,7 @@ def multi_stage_gulp_calc(structure, num_calcs, gulp_files, main_keywords,
         Magnitude of the derivatives of the potential for each atom.
 
     ---------------------------------------------------------------------------
-    Paul Sharp 27/03/2020
+    Paul Sharp 28/01/2021
     """
     
     assert len(gulp_files) >= num_calcs, 'ERROR in gulp_calc.multi_stage_gulp_calc() -- number of GULP calculations is set to {0:d}, but only {1:d} filenames are provided.'.format(num_calcs, len(gulp_files))
@@ -131,6 +132,9 @@ def multi_stage_gulp_calc(structure, num_calcs, gulp_files, main_keywords,
         vacancy_positions = determine_vacancy_positions(structure.atoms.copy())
         del structure.atoms[[atom.index for atom in structure.atoms if atom.symbol == "X"]]
 
+    gulp_conditions = Conditions(structure.atoms)
+    gulp_conditions.atoms_labels = structure.labels
+        
     for i in range(0, num_calcs):
         
         composite_keys = (main_keywords + " " + additional_keywords[i]).split()
@@ -172,7 +176,7 @@ def multi_stage_gulp_calc(structure, num_calcs, gulp_files, main_keywords,
             result = "unconverged"
             break
 
-        if isinstance(max_gnorms[i], float):
+        if isinstance(max_gnorms[i], float) and isinstance(gnorm, float):
             if gnorm > max_gnorms[i]:
                 result = "unconverged"
                 break
@@ -705,9 +709,11 @@ def read_gnorm(gulp_output):
         Final gnorm of the structure.
 
     ---------------------------------------------------------------------------
-    Paul Sharp 18/01/2018
+    Paul Sharp 28/01/2021
     """
 
+    gnorm = ""
+    
     with open(gulp_output, mode="r") as output_file:
 
         gnorm_marker = "Final Gnorm"

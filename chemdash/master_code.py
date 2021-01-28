@@ -236,8 +236,6 @@ def ChemDASH(calc_name):
             else:
             	atom_labels = initial_atoms.get_chemical_symbols()
             
-            print(atom_labels)
-            
             # Set up "Structure" object for the structure currently under consideration
             current_structure = Structure(initial_atoms, 0, atom_labels)
 
