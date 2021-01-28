@@ -835,7 +835,7 @@ def optimise_structure(structure, params, additional_inputs, structure_index, ou
 
     if params["calculator"]["value"] == "gulp":
 
-        gulp_files = ["structure_" + str(structure_index) + "_" + suffix for suffix in params["gulp_files"]["value"]]
+        gulp_files = ["structure_" + str(structure_index) + suffix for suffix in params["gulp_files"]["value"]]
         structure, result, outcome, time, = gulp_calc.multi_stage_gulp_calc(structure, params["num_calc_stages"]["value"], gulp_files, params["gulp_keywords"]["value"], additional_inputs["gulp_keywords"], params["gulp_options"]["value"], additional_inputs["gulp_options"], additional_inputs["gulp_max_gnorms"], params["gulp_shells"]["value"], params["gulp_library"]["value"])
 
         outcomes = gulp_calc.update_outcomes(outcome, outcomes)

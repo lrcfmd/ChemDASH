@@ -22,7 +22,7 @@
 |     initialise_close_packed_grid_points                                     |
 |                                                                             |
 |-----------------------------------------------------------------------------|
-| Paul Sharp 27/03/2020                                                       |
+| Paul Sharp 28/01/2021                                                       |
 |=============================================================================|
 """
 
@@ -77,7 +77,7 @@ def check_charge_balance(atoms_data):
         Value of (number of atoms * charge) for all atoms -- should be zero.
 
     ---------------------------------------------------------------------------
-    Paul Sharp 11/10/2019
+    Paul Sharp 28/01/2021
     """
 
     charge_balance = 0
@@ -85,7 +85,7 @@ def check_charge_balance(atoms_data):
     for species in atoms_data:
 
         num = int(species.split()[1])
-        charge = int(species.split()[2])
+        charge = float(species.split()[2])
                 
         charge_balance += num * charge
  
