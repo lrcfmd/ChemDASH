@@ -28,7 +28,7 @@
 |     search_local_neighbourhood                                              |
 |                                                                             |
 |-----------------------------------------------------------------------------|
-| Paul Sharp 25/03/2020                                                       |
+| Paul Sharp 28/01/2021                                                       |
 |=============================================================================|
 """
 
@@ -95,7 +95,7 @@ def ChemDASH(calc_name):
     None
 
     ---------------------------------------------------------------------------
-    Paul Sharp 25/03/2020
+    Paul Sharp 28/01/2021
     """
 
     start_time = time.time()
@@ -183,7 +183,7 @@ def ChemDASH(calc_name):
 
             # Check that the structure is charge balanced, stop if not
             charge_balance = initialise.check_charge_balance(atoms_data)
-
+            
             if charge_balance != 0:
                 sys.exit('ERROR - the structure is not charge balanced. The overall charge is: {0}.'.format(charge_balance))
 
@@ -225,8 +225,21 @@ def ChemDASH(calc_name):
                 if not params["vacancy_grid"]["value"]:
                     initial_atoms = initialise.populate_points_with_vacancies(initial_atoms.copy(), anion_grid + cation_grid)
 
+            # Set atom labels
+            if params["atom_labels"]["specified"]:
+                
+            	atom_labels = []
+
+            	for index, label in enumerate(params["atom_labels"]["value"]):
+                    atom_labels.extend([label] * int(atoms_data[index].split()[1]))
+                    
+            else:
+            	atom_labels = initial_atoms.get_chemical_symbols()
+            
+            print(atom_labels)
+            
             # Set up "Structure" object for the structure currently under consideration
-            current_structure = Structure(initial_atoms, 0)
+            current_structure = Structure(initial_atoms, 0, atom_labels)
 
             atomic_numbers_list = []
             positions_list = []
@@ -380,6 +393,7 @@ def ChemDASH(calc_name):
 
                 # Set the current structure as the best structure found so far
                 best_structure = Structure(current_structure.atoms.copy(), 0,
+                                           current_structure.labels,
                                            current_structure.energy,
                                            current_structure.volume,
                                            current_structure.ranked_atoms,
@@ -448,7 +462,7 @@ def ChemDASH(calc_name):
                 
                 new_atoms = generate_new_structure(current_structure.atoms.copy(), params, output,
                                                    valid_swap_groups, current_structure.ranked_atoms, rng)
-                new_structure = Structure(new_atoms.copy(), i)
+                new_structure = Structure(new_atoms.copy(), i, atom_labels)
 
                 # Check whether this proposed structure has been previously considered, if so try a new swap
                 visited, positions_list, atomic_numbers_list = swap.check_previous_structures(new_structure.atoms.copy(), positions_list, atomic_numbers_list)
@@ -523,6 +537,7 @@ def ChemDASH(calc_name):
                     params["temp"]["value"] /= params["temp_scale_factor"]["value"]
 
                     current_structure = Structure(new_structure.atoms.copy(), i,
+                                                  new_structure.labels,                                                  
                                                   new_structure.energy,
                                                   new_structure.volume,
                                                   new_structure.ranked_atoms,
@@ -547,6 +562,7 @@ def ChemDASH(calc_name):
                     if current_structure.energy < best_structure.energy:
 
                         best_structure = Structure(new_structure.atoms.copy(), i,
+                                                   current_structure.labels,
                                                    current_structure.energy,
                                                    current_structure.volume,
                                                    current_structure.ranked_atoms,
@@ -604,8 +620,9 @@ class Structure(object):
     """
 
     # =========================================================================
-    def __init__(self, atoms, index, energy=0.0, volume=0.0, ranked_atoms={},
-                 bvs_atoms=[], bvs_sites=[], potentials=[], derivs=[]):
+    def __init__(self, atoms, index, labels, energy=0.0, volume=0.0,
+                 ranked_atoms={}, bvs_atoms=[], bvs_sites=[], potentials=[],
+                 derivs=[]):
         """
         Initialise the Structure data.
 
@@ -615,6 +632,8 @@ class Structure(object):
             The atoms object containing the structure.
         index : int
             The number of basin hopping moves to get to this structure.
+        labels : string
+            The label used for each atom in atom in the structure.
         energy : float
             The energy of the structure.
         volume : float
@@ -637,11 +656,12 @@ class Structure(object):
         None
 
         -----------------------------------------------------------------------
-        Paul Sharp 10/04/2019
+        Paul Sharp 28/01/2021
         """
 
         self.atoms = atoms
         self.index = index
+        self.labels = labels
         self.energy = energy
         self.volume = volume
         self.ranked_atoms = ranked_atoms
@@ -871,7 +891,7 @@ def accept_structure(structure, params, output, energy_step, result, basins,
         basin was visited.
 
     ---------------------------------------------------------------------------
-    Paul Sharp 26/03/2020
+    Paul Sharp 28/01/2021
     """
     
     # Set up vacancy grids if we are using optimised geometries.
@@ -902,7 +922,7 @@ def accept_structure(structure, params, output, energy_step, result, basins,
         # Obtain values for the site potential of all atoms and vacancies in the relaxed structure if necessary.
         if calc_pot:
 
-            pot_structure = Structure(structure.atoms, structure.index)        
+            pot_structure = Structure(structure.atoms, structure.index, structure.labels)        
             structure.potentials, structure.derivs, _, _, _ = update_potentials(pot_structure, params["gulp_library"]["value"])
 
         output_list(potentials_file, structure.index, structure.potentials)
@@ -1291,10 +1311,10 @@ def search_local_neighbourhood(structure, output, params):
         
 
     ---------------------------------------------------------------------------
-    Paul Sharp 26/03/2020
+    Paul Sharp 28/01/2021
     """
 
-    lcn_structure = Structure(structure.atoms, structure.index)
+    lcn_structure = Structure(structure.atoms, structure.index, structure.labels)
     
     lcn_structure, _, _, _ = gulp_calc.multi_stage_gulp_calc(lcn_structure, 1, ["lcn"], "sing", [""], [""], [[""]], [""], [], params["gulp_library"]["value"])
     lcn_initial_energy = lcn_structure.energy
