@@ -28,7 +28,7 @@
 |     search_local_neighbourhood                                              |
 |                                                                             |
 |-----------------------------------------------------------------------------|
-| Paul Sharp 28/01/2021                                                       |
+| Paul Sharp 01/02/2021                                                       |
 |=============================================================================|
 """
 
@@ -95,7 +95,7 @@ def ChemDASH(calc_name):
     None
 
     ---------------------------------------------------------------------------
-    Paul Sharp 28/01/2021
+    Paul Sharp 01/02/2021
     """
 
     start_time = time.time()
@@ -599,7 +599,10 @@ def ChemDASH(calc_name):
 
         report_statistics(output, basins, outcomes, structure_count, structures_considered, params["calculator"]["value"])
 
-        output.write("The best structure is structure {0:d}, with energy {1:.8f} eV/atom and volume {2:.8f} A0^3, and has been written to best.cif\n".format(best_structure.index, best_structure.energy, best_structure.volume))
+        try:
+            output.write("The best structure is structure {0:d}, with energy {1:.8f} eV/atom and volume {2:.8f} A0^3, and has been written to best.cif\n".format(best_structure.index, best_structure.energy, best_structure.volume))
+        except ValueError:
+            pass
 
         output.write("\n")
         output.write("Time taken: {0:f}s\n".format(time.time() - start_time))
