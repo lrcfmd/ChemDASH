@@ -27,7 +27,7 @@
 |     populate_points_with_vacancies                                          |
 |                                                                             |
 |-----------------------------------------------------------------------------|
-| Paul Sharp 28/01/2021                                                       |
+| Paul Sharp 02/02/2021                                                       |
 | Chris Collins 26/11/2020                                                    |
 |=============================================================================|
 """
@@ -263,7 +263,7 @@ def run_gulp(structure, gulp_file, previous_restart_file="",
         The input, output and restart files for this GULP calculation.
 
     ---------------------------------------------------------------------------
-    Paul Sharp 02/08/2018
+    Paul Sharp 02/02/2021
     """
 
     # Set files for calculation
@@ -318,8 +318,9 @@ def run_gulp(structure, gulp_file, previous_restart_file="",
 
         else:
 
-            raise RuntimeError('ERROR in "gulp_calc.run_gulp()" -- shells are used in this GULP calculation, but a ".res" file was not generated in the previous stage of the calculation.\n'
-                               'This means that the positions of the shells cannot be tracked accurately. Please specify "dump <restart>.res" in the "gulp_options".')
+            print('WARNING for "{0}" -- shells are used in this GULP calculation, but a ".res" file was not generated in the previous stage of the calculation.\n'
+                  'This means that the positions of the shells cannot be tracked accurately. Please specify "dump <restart>.res" in the "gulp_options".'.format(gulp_file))
+            result = "gulp failure"
 
     if not os.path.isfile(calc_files["output"]):
         result = "gulp failure"
