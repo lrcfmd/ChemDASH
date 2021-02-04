@@ -27,7 +27,7 @@
 |     populate_points_with_vacancies                                          |
 |                                                                             |
 |-----------------------------------------------------------------------------|
-| Paul Sharp 02/02/2021                                                       |
+| Paul Sharp 04/02/2021                                                       |
 | Chris Collins 26/11/2020                                                    |
 |=============================================================================|
 """
@@ -624,7 +624,7 @@ def execute_gulp_command_or_script(gulp_job_name, gulp_output):
     None
 
     ---------------------------------------------------------------------------
-    Paul Sharp 27/03/2020
+    Paul Sharp 04/02/2020
     """
 
     # Perform the GULP calculation
@@ -651,7 +651,10 @@ def execute_gulp_command_or_script(gulp_job_name, gulp_output):
     else:
         raise RuntimeError('Please set either GULP_COMMAND or GULP_SCRIPT environment variable')
 
-    if exitcode != 0:
+    #Exit code 124 refers to a bash timeout
+    if exitcode == 124:
+        pass
+    elif exitcode != 0:
         raise RuntimeError('Gulp exited with exit code: {0}.'.format(exitcode))
 
     return None
