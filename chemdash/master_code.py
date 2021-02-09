@@ -184,7 +184,7 @@ def ChemDASH(calc_name):
             # Check that the structure is charge balanced, stop if not
             charge_balance = initialise.check_charge_balance(atoms_data)
             
-            if charge_balance != 0:
+            if abs(charge_balance) > 1.0E-12:
                 sys.exit('ERROR - the structure is not charge balanced. The overall charge is: {0}.'.format(charge_balance))
 
             if params["initial_structure_file"]["specified"]:
@@ -226,16 +226,14 @@ def ChemDASH(calc_name):
                     initial_atoms = initialise.populate_points_with_vacancies(initial_atoms.copy(), anion_grid + cation_grid)
 
             # Set atom labels
+            atom_labels = None
             if params["atom_labels"]["specified"]:
                 
             	atom_labels = []
 
             	for index, label in enumerate(params["atom_labels"]["value"]):
                     atom_labels.extend([label] * int(atoms_data[index].split()[1]))
-                    
-            else:
-            	atom_labels = initial_atoms.get_chemical_symbols()
-            
+                                
             # Set up "Structure" object for the structure currently under consideration
             current_structure = Structure(initial_atoms, 0, atom_labels)
 
