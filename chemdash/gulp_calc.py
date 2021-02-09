@@ -132,8 +132,9 @@ def multi_stage_gulp_calc(structure, num_calcs, gulp_files, main_keywords,
         vacancy_positions = determine_vacancy_positions(structure.atoms.copy())
         del structure.atoms[[atom.index for atom in structure.atoms if atom.symbol == "X"]]
 
-    gulp_conditions = Conditions(structure.atoms)
-    gulp_conditions.atoms_labels = structure.labels
+    if structure.labels is not None:
+        gulp_conditions = Conditions(structure.atoms)
+        gulp_conditions.atoms_labels = structure.labels
         
     for i in range(0, num_calcs):
         
