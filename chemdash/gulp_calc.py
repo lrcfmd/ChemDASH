@@ -678,8 +678,10 @@ def read_energy(gulp_output):
         Energy of the structure in eV.
 
     ---------------------------------------------------------------------------
-    Paul Sharp 15/01/2018
+    Paul Sharp 25/02/2021
     """
+
+    energy = ""
 
     with open(gulp_output, mode="r") as output_file:
 
