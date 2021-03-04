@@ -95,7 +95,7 @@ def main(args=None):
                         metavar="<input file>",
                         help='Write an input file that includes all keywords with their default values to the given file and exit.')  # include: type="File --see docs"
     parser.add_argument('-v', '--version', action='version',
-                        version='%(prog)s 1.1')
+                        version='%(prog)s 1.2')
 
     opts = parser.parse_args(args)
 
