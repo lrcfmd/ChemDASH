@@ -77,7 +77,7 @@ def initialise_default_params(calc_name):
                        "specified": False,
                        "type": "list of strings",
                        "description": 'Label applied for the atoms on each line of the atoms file -- used to distinguish atoms in forcefields.',
-                   },  
+                   },
         "atom_rankings": {"value": "random",
                           "specified": False,
                           "supported_values": ["random", "bvs"],
