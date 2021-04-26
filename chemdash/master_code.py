@@ -28,7 +28,7 @@
 |     search_local_neighbourhood                                              |
 |                                                                             |
 |-----------------------------------------------------------------------------|
-| Paul Sharp 01/02/2021                                                       |
+| Paul Sharp 24/04/2021                                                       |
 |=============================================================================|
 """
 
@@ -95,7 +95,7 @@ def ChemDASH(calc_name):
     None
 
     ---------------------------------------------------------------------------
-    Paul Sharp 01/02/2021
+    Paul Sharp 24/04/2021
     """
 
     start_time = time.time()
@@ -235,7 +235,7 @@ def ChemDASH(calc_name):
                     atom_labels.extend([label] * int(atoms_data[index].split()[1]))
                                 
             # Set up "Structure" object for the structure currently under consideration
-            current_structure = Structure(initial_atoms, 0, atom_labels)
+            current_structure = Structure(initial_atoms.copy(), 0, atom_labels)
 
             atomic_numbers_list = []
             positions_list = []
@@ -921,7 +921,7 @@ def accept_structure(structure, params, output, energy_step, result, basins,
         # Obtain values for the site potential of all atoms and vacancies in the relaxed structure if necessary.
         if calc_pot:
 
-            pot_structure = Structure(structure.atoms, structure.index, structure.labels)        
+            pot_structure = Structure(structure.atoms.copy(), structure.index, structure.labels)        
             structure.potentials, structure.derivs, _, _, _ = update_potentials(pot_structure, params["gulp_library"]["value"])
 
         output_list(potentials_file, structure.index, structure.potentials)
@@ -1313,7 +1313,7 @@ def search_local_neighbourhood(structure, output, params):
     Paul Sharp 28/01/2021
     """
 
-    lcn_structure = Structure(structure.atoms, structure.index, structure.labels)
+    lcn_structure = Structure(structure.atoms.copy(), structure.index, structure.labels)
     
     lcn_structure, _, _, _ = gulp_calc.multi_stage_gulp_calc(lcn_structure, 1, ["lcn"], "sing", [""], [""], [[""]], [""], [], params["gulp_library"]["value"])
     lcn_initial_energy = lcn_structure.energy
