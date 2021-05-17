@@ -25,7 +25,7 @@ done using either the GULP or VASP packages.
 
 ChemDASH is discussed in the scientific paper:
 
-Paul M. Sharp, Matthew S. Dyer, George R. Darling, John B. Claridge and Matthew J. Rosseinsky, Chemically directed structure evolution for crystal structure prediction, Phys. Chem. Chem. Phys., 2020,22, 18205-18218, https://pubs.rsc.org/en/content/articlelanding/2020/cp/d0cp02206c
+Paul M. Sharp, Matthew S. Dyer, George R. Darling, John B. Claridge and Matthew J. Rosseinsky, Chemically directed structure evolution for crystal structure prediction, Phys. Chem. Chem. Phys., 2020, 22, 18205-18218, https://pubs.rsc.org/en/content/articlelanding/2020/cp/d0cp02206c
 
 Usage
 =====
