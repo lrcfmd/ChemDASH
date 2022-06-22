@@ -782,7 +782,7 @@ def write_output_file_header(output, params):
                 # Check for lists of lists, output them as comma separated values
                 if value: # Checks list is non-empty
                     
-                    if not isinstance(value[0], str) and isinstance(value[0], collections.Sequence):
+                    if not isinstance(value[0], str) and isinstance(value[0], collections.abc.Sequence):
                         output.write("{0:30} = {1}\n".format(keyword, ', '.join(sorted([str(', '.join([str(y) for y in x])) for x in value]))))
                     else:
                         output.write("{0:30} = {1}\n".format(keyword, ', '.join(sorted([str(x) for x in value]))))
