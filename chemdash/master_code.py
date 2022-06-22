@@ -777,7 +777,7 @@ def write_output_file_header(output, params):
             value = params[keyword]["value"]
  
             # Check for lists, output them as comma separated values
-            if not isinstance(value, str) and isinstance(value, collections.Sequence):
+            if not isinstance(value, str) and isinstance(value, collections.abc.Sequence):
 
                 # Check for lists of lists, output them as comma separated values
                 if value: # Checks list is non-empty
