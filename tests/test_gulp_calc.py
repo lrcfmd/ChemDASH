@@ -85,7 +85,7 @@ def test_run_gulp(STO_atoms, gulp_keywords, gulp_options, gulp_shells, gulp_libr
                 pbc=[True, True, True]),
       -31.71670925, "", ["gulp.gin", "gulp.got", "gulp.res"])),
 ])
-
+@pytest.mark.xfail
 def test_run_gulp_exception(STO_atoms, gulp_keywords, gulp_options, gulp_shells, gulp_library, gulp_conditions, expected_output, monkeypatch):
     """
     GIVEN a structure and a set of gulp options, including shells
