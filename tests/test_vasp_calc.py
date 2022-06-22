@@ -17,13 +17,13 @@ import time
 #Tests
 
 @pytest.mark.parametrize("structure, num_calcs, main_settings, additional_settings, max_convergence_calcs, expected_output", [
-     (chemdash.master_code.Structure(index=0, atoms=
+     (chemdash.master_code.Structure(index=0, labels=[], atoms=
                 ase.Atoms(symbols = "SrTiO3", cell = [2.0, 2.0, 2.0],
                 charges = [2.0, 4.0, -2.0, -2.0, -2.0],
                 scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
                 pbc=[True, True, True])),
       2, {}, [{}, {}], 1,
-      (chemdash.master_code.Structure(index=0, atoms=
+      (chemdash.master_code.Structure(index=0, labels=[], atoms=
                  ase.Atoms(symbols = "SrTiO3", cell = [2.0, 2.0, 2.0],
                  charges = [2.0, 4.0, -2.0, -2.0, -2.0],
                  scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
