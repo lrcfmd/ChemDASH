@@ -1,47 +1,47 @@
-import pytest
-import mock
+"""
+|=============================================================================|
+|                             V A S P   C A L C                               |
+|=============================================================================|
+|                                                                             |
+| This module contains routines that run custom VASP calculations, and check  |
+| the status of VASP calculations.                                            |
+|                                                                             |
+| Contains                                                                    |
+| --------                                                                    |
+|     multi_stage_vasp_calc                                                   |
+|     run_vasp                                                                |
+|     set_vasp_script                                                         |
+|     check_float                                                             |
+|     converged_in_one_scf_cycle                                              |
+|     populate_points_with_vacancies                                          |
+|                                                                             |
+|-----------------------------------------------------------------------------|
+| Paul Sharp 05/03/2021                                                       |
+|=============================================================================|
+"""
 
-import chemdash.master_code
-import chemdash.vasp_calc
+from builtins import range
 
+from ase.calculators.vasp import Vasp
 import ase
-import numpy as np
 import os
-import subprocess
 import shutil
 import time
 
 
-#===========================================================================================================================================================
-#===========================================================================================================================================================
-#Tests
-
-@pytest.mark.parametrize("structure, num_calcs, main_settings, additional_settings, max_convergence_calcs, save_outcar, expected_output", [
-     (chemdash.master_code.Structure(index = 0, volume = 7.999999999999998, labels = [], atoms=
-                ase.Atoms(symbols = "SrTiO3", cell = [2.0, 2.0, 2.0],
-                charges = [2.0, 4.0, -2.0, -2.0, -2.0],
-                scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
-                pbc=[True, True, True])),
-      2, {}, [{}, {}], 1, False,
-      (chemdash.master_code.Structure(index = 0, volume = 7.999999999999998, labels = [], atoms=
-                 ase.Atoms(symbols = "SrTiO3", cell = [2.0, 2.0, 2.0],
-                 charges = [2.0, 4.0, -2.0, -2.0, -2.0],
-                 scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
-                 pbc=True)), "unconverged", 0.0))
-])
-
-def test_multi_stage_vasp_calc(structure, num_calcs, main_settings, additional_settings, max_convergence_calcs,  expected_output, save_outcar, monkeypatch):
+# =============================================================================
+# =============================================================================
+def multi_stage_vasp_calc(structure, num_calcs, vasp_file, main_settings,
+                          additional_settings, max_convergence_calcs,
+                          save_outcar):
     """
-    GIVEN a structure and set of vasp settings
-
-    WHEN we run vasp on that structure with those settings
-
-    THEN we return the optimised structure with the energy and result of the calculation
+    Run a VASP calculation that consists of many stages, which can involve different settings.
+    The final calculation is run until it converges in one SCF cycle.
 
     Parameters
     ----------
-    structure : ASE atoms
-        The structure used in the VASP calculation
+    structure : ChemDASH Structure
+        The structure class containing the ase atoms object to be used in the VASP calculation.
     num_calcs : integer
         The number of VASP calculation stages.
     vasp_file : str
@@ -55,58 +55,150 @@ def test_multi_stage_vasp_calc(structure, num_calcs, main_settings, additional_s
     save_outcar : bool
         If true, retains final OUTCAR file as "OUTCAR_[structure_index]".
 
+    Returns
+    -------
+    atoms : ase atoms
+        The final structure after the calculation.
+    result : string
+        The result of the VASP calculation,
+        either "converged", "unconverged", "vasp failure", or "timed out"
+    energy : float
+        Energy of the structure in eV.
+    calc_time : float
+        Time taken for this VASP calculation.
+
     ---------------------------------------------------------------------------
-    Paul Sharp 07/12/2022
+    Paul Sharp 05/03/2021
     """
 
-    # Need to patch all file operations -- we don't want to perform any during tests
-    monkeypatch.setattr(os, 'remove', lambda x : None)
-    monkeypatch.setattr(shutil, 'copy2', lambda x, y : None)
-    monkeypatch.setattr(shutil, 'copyfileobj', lambda x, y : None)
-    monkeypatch.setattr('builtins.open', mock.mock_open())
+    assert len(additional_settings) >= num_calcs, 'ERROR in vasp_calc.multi_stage_vasp_calc() -- number of VASP calculations is set to {0:d}, but only {1:d} sets of additional settings are provided.'.format(num_calcs, len(additional_settings))
 
-    # Patch the "run_vasp()" routine in order to control the output
-    mock_run = mock.MagicMock(side_effect =
-                              [(ase.Atoms(symbols = "SrTiO3",
-                                          cell = [2.0, 2.0, 2.0], charges = [2.0, 4.0, -2.0, -2.0, -2.0],
-                                          scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
-                                          pbc=[True, True, True]), 0.0, ""),
-                               (ase.Atoms(symbols = "SrTiO3",
-                                          cell = [2.0, 2.0, 2.0], charges = [2.0, 4.0, -2.0, -2.0, -2.0],
-                                          scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
-                                          pbc=[True, True, True]), 0.0, "")])
+    continue_to_final_stage = True
+    vasp_start_time = time.time()
 
-    monkeypatch.setattr(chemdash.vasp_calc, 'run_vasp', lambda x1, x2 : mock_run())
+    # Strip out X atoms from the structure - they are only there to mark vacancies and have no POTCAR file.
+    vacancy_positions = determine_vacancy_positions(structure.atoms.copy())
+    del structure.atoms[[atom.index for atom in structure.atoms if atom.symbol == "X"]]
 
-    # Patch the vasp_time -- not predictable during test
-    monkeypatch.setattr(time, 'time', lambda : 0.0)
+    with open(vasp_file, mode="w") as vasp_out:
 
-    # These are different instances of the same class, so we should compare the contents rather than compare them directly
-    output = chemdash.vasp_calc.multi_stage_vasp_calc(structure, num_calcs, "", main_settings, additional_settings, max_convergence_calcs, save_outcar)
-    assert output[0].__dict__ == expected_output[0].__dict__
-    assert output[1:] == expected_output[1:]
+        for i in range(0, num_calcs - 1):
+            
+            vasp_settings = main_settings.copy()
+            vasp_settings.update(additional_settings[i])
+
+            structure.atoms, structure.energy, result = run_vasp(structure.atoms, vasp_settings)
+
+            if os.path.isfile("OSZICAR"):
+                with open("OSZICAR", mode="r") as oszicar_file:
+                    shutil.copyfileobj(oszicar_file, vasp_out)
+
+            # Continue only if the calculation was successfully performed
+            # without timing out, or if the energy has blown up such that
+            # it is not representable as a float
+            if result == "vasp failure":
+
+                continue_to_final_stage = False
+                break
+
+            if not check_float(structure.energy):
+
+                result = "unconverged"
+                continue_to_final_stage = False
+                break
+
+            if converged_in_one_scf_cycle("OUTCAR"):
+
+                result = "converged"
+                continue_to_final_stage = False
+                break
+
+            # Copy CONTCAR to POSCAR for next stage of calculation -- use "copy2()" because it copies metadata and permissions
+            if os.path.isfile("CONTCAR"):
+                shutil.copy2("CONTCAR", "POSCAR")
+
+        if continue_to_final_stage:
+
+            # With calculation completed up to the penultimate stage, run final stage of calculation until convergence within a single SCF cycle is achieved
+            vasp_settings = main_settings.copy()
+
+            # Add additional settings, but allow for zero calc stages.
+            try:
+                vasp_settings.update(additional_settings[-1])
+            except IndexError:
+                pass
+
+            for i in range(0, max_convergence_calcs):
+
+                structure.atoms, structure.energy, result = run_vasp(structure.atoms, vasp_settings)
+
+                if os.path.isfile("OSZICAR"):
+                    with open("OSZICAR", mode="r") as oszicar_file:
+                        shutil.copyfileobj(oszicar_file, vasp_out)
+
+                # Continue only if the calculation was successfully performed
+                # without timing out, or if the energy has blown up such that
+                # it is not representable as a float
+                if result == "vasp failure":
+
+                    break
+
+                # If energy is not representable as a float, calculation is unconverged.
+                if not check_float(structure.energy):
+
+                    result = "unconverged"
+
+                if converged_in_one_scf_cycle("OUTCAR"):
+
+                    result = "converged"
+
+                # Exit loop if the result of the calculation is determined -- whatever it may be
+                if result != "":
+                    break
+
+                # Copy CONTCAR to POSCAR for next stage of calculation -- use "copy2()" because it copies metadata and permissions
+                if os.path.isfile("CONTCAR"):
+                    shutil.copy2("CONTCAR", "POSCAR")
+
+            # If we exit the loop normally having run out of convergence calculations, the overall calculation is unconverged
+            else:
+
+                result = "unconverged"
+
+    # Convert energy to units of eV/atom
+    try:
+        structure.energy /= float(len(structure.atoms))
+    except (TypeError, ValueError):
+        pass
+
+    # Remove files ready for a new calculation
+    files_to_remove = ["CONTCAR", "CHGCAR", "WAVECAR", "XDATCAR"]
+
+    for rm_file in files_to_remove:
+
+        try:
+            os.remove(rm_file)
+        except OSError:
+            pass
+
+    # Retain final OUTCAR file if desired
+    if save_outcar:
+        os.rename("OUTCAR", "OUTCAR_" + str(structure.index))
+        
+    # Replace the vacancies in the atoms object
+    structure.atoms = populate_points_with_vacancies(structure.atoms, vacancy_positions)
+    structure.volume = structure.atoms.get_volume()
+    
+    calc_time = time.time() - vasp_start_time
+    
+    return structure, result, calc_time
 
 
-#===========================================================================================================================================================
-@pytest.mark.parametrize("structure, vasp_settings, expected_output", [
-    (ase.Atoms(symbols = "SrTiO3", cell = [2.0, 2.0, 2.0],
-               scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
-               calculator=None,
-               pbc=[True, True, True]), {'ibrion':1},
-     (ase.Atoms(symbols = "SrTiO3", cell = [2.0, 2.0, 2.0],
-                scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
-                calculator=ase.calculators.vasp.Vasp(),
-                pbc=[True, True, True]),
-     1.0, ""))
-])
-
-def test_run_vasp(structure, vasp_settings, expected_output, monkeypatch):
+# =============================================================================
+def run_vasp(structure, vasp_settings):
     """
-    GIVEN a structure and set of vasp settings
-
-    WHEN we run vasp on that structure with those settings
-
-    THEN we return the optimised structure with the energy and result of the calculation
+    Run a single VASP calculation using an ASE calculator.
+    This routine will make use of WAVECAR and CONTCAR files if they are available.
 
     Parameters
     ----------
@@ -115,231 +207,194 @@ def test_run_vasp(structure, vasp_settings, expected_output, monkeypatch):
     vasp_settings : dict
         The set of VASP options to apply with their values.
 
+    Returns
+    -------
+    structure : ase atoms
+        The structure after performing this calculation.
+    energy : float
+        Energy of the structure in eV.
+    result : string
+        The result of the VASP calculation,
+        either "converged", "unconverged", "vasp failure", or "timed out"
+
     ---------------------------------------------------------------------------
-    Paul Sharp 27/06/2019
+    Paul Sharp 25/09/2017
     """
 
-    monkeypatch.setattr(structure, 'get_potential_energy', lambda: 1.0)
+    # Set files for calculation
+    energy = 0.0
+    result = ""
 
-    final_structure, energy, result = chemdash.vasp_calc.run_vasp(structure, vasp_settings)
+    # Use ASE calculator -- the use of **kwargs in the function call allows us to set the desired arguments using a dictionary
+    structure.set_calculator(Vasp(**vasp_settings))
 
-    # Class definition is that two ase Atoms objects are the same if they have the same atoms, unit cell,
-    # positions and boundary conditions.
-    # Therefore we need a separate test to ensure the calculator is attached.
-    assert final_structure.calc.name is "Vasp"
-    assert (final_structure, energy, result) == expected_output
+    # Run calculation, and consider any exception to be a VASP failure
+    try:
+        energy = structure.get_potential_energy()
 
-    
-#===========================================================================================================================================================
-@pytest.mark.parametrize("structure, vasp_settings, expected_output", [
-    (ase.Atoms(symbols = "SrTiO3", cell = [2.0, 2.0, 2.0],
-               scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
-               calculator=None,
-               pbc=[True, True, True]), {'ibrion':1},
-     (ase.Atoms(symbols = "SrTiO3", cell = [2.0, 2.0, 2.0],
-                scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
-                calculator=ase.calculators.vasp.Vasp(),
-                pbc=[True, True, True]),
-     0.0, "vasp failure"))
-])
+    except:
+        result = "vasp failure"
 
-def test_run_vasp_exception(structure, vasp_settings, expected_output, monkeypatch):
+    return structure, energy, result
+
+
+# =============================================================================
+def set_vasp_script(vasp_script, executable, num_cores, vasp_pseudopotentials):
     """
-    GIVEN a structure and set of vasp settings
-
-    WHEN vasp fails to run on that structure with those settings
-
-    THEN we return the original structure with the "vasp failure" result.
+    Writes the script that is used to run Vasp from within ASE.
 
     Parameters
     ----------
-    structure : ASE atoms
-        The structure used in the VASP calculation
-    vasp_settings : dict
-        The set of VASP options to apply with their values.
+    vasp_script : string
+        Filename of the script to be written.
+    executable : string
+        The filepath to the Vasp executable to be used.
+    num_cores : integer
+        The number of parallel cores to be used for Vasp calculations.
+    vasp_pseudopotentials : string
+        Filepath to the folder containing Vasp pseudopotential files.
+
+    Returns
+    -------
+    None
 
     ---------------------------------------------------------------------------
-    Paul Sharp 27/06/2019
-    """
-    
-    # We patch the calls to "structure.get_potential_energy()" in order to raise the exception.
-    mock_exception = mock.MagicMock(side_effect = (AssertionError))
-
-    monkeypatch.setattr(structure, 'get_potential_energy', lambda : mock_exception())
-
-    assert chemdash.vasp_calc.run_vasp(structure, vasp_settings) == expected_output
-
-
-#===========================================================================================================================================================
-@pytest.mark.parametrize("executable, num_cores, vasp_pseudopotentials, expected_output", [
-    ("/home/vasp", 2, "/home/bin/", [mock.call("import os\nexitcode = os.system('mpirun -np 2 /home/vasp')")]),
-    ("/home/vasp", 1, "/home/bin/", [mock.call("import os\nexitcode = os.system('/home/vasp')")]),
-])
-
-def test_set_vasp_script(executable, num_cores, vasp_pseudopotentials, expected_output, monkeypatch):
-    """
-    GIVEN a structure and set of vasp settings
-
-    WHEN vasp fails to run on that structure with those settings
-
-    THEN we return the original structure with the "vasp failure" result.
-
-    Parameters
-    ----------
-    executable : str
-        The filepath for the vasp executable
-    num_cores : int
-        The number of cores over which vasp will be run
-    vasp_pseudopotentials : str
-        The filepath for the vasp pseudopotentials library
-
-    ---------------------------------------------------------------------------
-    Paul Sharp 27/06/2019
+    Paul Sharp 03/08/2018
     """
 
-    vasp_script = "run_vasp.sh"
-    
-    # We need to ensure we use "mock_open" to avoid writing to a file
-    # Note the lack of lambda -- we want the mock itself, not its return value
-    mock_file = mock.mock_open()
-    monkeypatch.setattr('builtins.open', mock_file)
+    with open(vasp_script, mode="w") as script:
 
-    chemdash.vasp_calc.set_vasp_script(vasp_script, executable, num_cores, vasp_pseudopotentials)
+        if num_cores > 1:
+            script.write("import os\nexitcode = os.system('mpirun -np " + str(num_cores) + " " + executable + "')")
 
-    # We check the calls to the write function as we do not return what we write
-    assert mock_file().write.call_args_list == expected_output
-    
-    assert os.environ["VASP_SCRIPT"] == "./" + vasp_script
-    assert os.environ["VASP_PP_PATH"] == vasp_pseudopotentials
-    
-    
-#===========================================================================================================================================================
-@pytest.mark.parametrize("value, expected_output", [
-    (1.0, True),
-    (0.0, True),
-    (-1.0, True),
-    ("1.0", True),
-    ("0.0", True),
-    ("-1.0", True),
-    ("str", False),
-    ("***", False),
-])
+        else:
+            script.write("import os\nexitcode = os.system('" + executable + "')")
+
+    os.environ["VASP_SCRIPT"] = "./" + vasp_script
+    os.environ["VASP_PP_PATH"] = vasp_pseudopotentials
+
+    return None
 
 
-def test_check_float(value, expected_output):
+# =============================================================================
+def check_float(value):
     """
-    GIVEN an input value.
-
-    WHEN we try to convert it to a float
-
-    THEN we return a logical set depending on whether or not the value can be represented as a floating point number.
-
+    Determines whether or not a value is representable as a floating point.
 
     Parameters
     ----------
     value : str
         The value of interest
 
+    Returns
+    -------
+    representable : boolean
+        True if value is representable as a float.
+
     ---------------------------------------------------------------------------
-    Paul Sharp 25/10/2017
+    Paul Sharp 07/09/2017
     """
 
-    assert chemdash.vasp_calc.check_float(value) == expected_output
+    representable = True
+
+    try:
+        float(value)
+    except ValueError:
+        representable = False
+
+    return representable
 
 
-#===========================================================================================================================================================
-@pytest.mark.parametrize("test_outcar, expected_output", [
-    ('''------------------------ aborting loop because EDIFF is reached ----------------------------------------
-    reached required accuracy - stopping structural energy minimisation''', True),
-    ('''reached required accuracy - stopping structural energy minimisation
-    ------------------------ aborting loop because EDIFF is reached ----------------------------------------
-    reached required accuracy - stopping structural energy minimisation''', True),
-    ('''------------------------ aborting loop because EDIFF is reached ----------------------------------------
-    ------------------------ aborting loop because EDIFF is reached ----------------------------------------
-    reached required accuracy - stopping structural energy minimisation''', False),
-    ('''------------------------ aborting loop because EDIFF is reached ----------------------------------------
-    ------------------------ aborting loop because EDIFF is reached ----------------------------------------''', False),
-    ('''reached required accuracy - stopping structural energy minimisation''', False),
-    ('''------------------------ aborting loop because EDIFF is reached ----------------------------------------''', False),
-])
-
-def test_converged_in_one_scf_cycle(test_outcar, expected_output, monkeypatch):
+# =============================================================================
+def converged_in_one_scf_cycle(outcar_file):
     """
-    GIVEN an OUTCAR file
-
-    WHEN we check whether the calculation converged.
-
-    THEN we return a logical set depending on whether or not the calculation converged in one SCF cycle
-
+    Determines whether a VASP calculation converged in a single SCF cycle.
 
     Parameters
     ----------
-    test_outcar_file : str
+    outcar_file : str
         OUTCAR file for this vasp calculation.
 
+    Returns
+    -------
+    converged : boolean
+        True if the calculation has converged, and did so within a single SCF cycle.
+
     ---------------------------------------------------------------------------
-    Paul Sharp 10/11/2017
+    Paul Sharp 27/10/2017
     """
 
-    # We need to ensure we use "mock_open" to return our test data instead of reading a file
-    # We also need to ensure that the return value of this Mock produces an iterable,
-    # so we can loop over the lines of the file
-    iterable_mock_file = mock.mock_open(read_data = test_outcar)
-    iterable_mock_file.return_value.__iter__ = lambda x : iter(x.readline, '')
+    aborting_ionic_loop_marker = "aborting loop"
+    convergence_marker = "reached required accuracy"
 
-    # Note the lack of lambda -- we want the mock itself, not its return value
-    # We pass a blank string for the file argument for this reason
-    monkeypatch.setattr('builtins.open', iterable_mock_file)
+    num_convergence_strings = 0
+    num_ionic_loops = 0
 
-    assert chemdash.vasp_calc.converged_in_one_scf_cycle("") == expected_output
+    with open(outcar_file, mode="r") as outcar:
+
+        for line in outcar:
+
+            num_convergence_strings += line.count(convergence_marker)
+            num_ionic_loops += line.count(aborting_ionic_loop_marker)
+
+    converged = num_convergence_strings > 0 and num_ionic_loops == 1
+
+    return converged
 
 
-#===========================================================================================================================================================
-@pytest.mark.parametrize("expected_output", [
-    ([0.0, 0.0, 0.0], [0.25, 0.25, 0.25], [0.75, 0.75, 0.75], [0.0, 0.5, 0.0], [0.25, 0.25, 0.75]),
-])
-
-def test_determine_vacancy_positions(STOX_structure, expected_output):
+# =============================================================================
+def determine_vacancy_positions(structure):
     """
-    GIVEN an atoms object 
-
-    WHEN we look for the positions of vacancies
-
-    THEN we return a list of vacancy positions
+    Find the scaled positions of vacancies in a structure
 
     Parameters
     ----------
-    None
+    structure : ase atoms
+        The structure in which we wish to determine the vacancy positions.
+
+    Returns
+    -------
+    vacancy_positions : float
+        The list of vacancy positions.
 
     ---------------------------------------------------------------------------
-    Paul Sharp 27/06/2019
+    Paul Sharp 27/07/2018
     """
 
-    assert all([np.allclose(x, y) for x, y in zip(chemdash.vasp_calc.determine_vacancy_positions(STOX_structure), expected_output)])
+    del structure[[atom.index for atom in structure if atom.symbol != "X"]]
+    vacancy_positions = structure.get_scaled_positions()
+
+    return vacancy_positions
 
 
-#===========================================================================================================================================================
-@pytest.mark.parametrize("vacancy_points", [
-    ([[0.0, 0.0, 0.0], [0.25, 0.25, 0.25], [0.75, 0.75, 0.75], [0.0, 0.5, 0.0], [0.25, 0.25, 0.75]]),
-])
-
-def test_populate_points_with_vacancies(STO_atoms, vacancy_points, STOX_structure):
+# =============================================================================
+def populate_points_with_vacancies(structure, vacancy_positions):
     """
-    GIVEN an atoms object and a list of points
-
-    WHEN we add those points to the structure as vacancies
-
-    THEN we return the atoms object with the list of points included as vacancies
+    Add a list of points to a structure as vacancies.
 
     Parameters
     ----------
-    struct : ase atoms
+    structure : ase atoms
         The structure to which we will add vacancies.
-    vacancy_points : float
+    vacancy_positions : float
         The list of points to be recorded as vacancies.
 
+    Returns
+    -------
+    structure : ase atoms
+        The structure with the points set as vacancies.
+
     ---------------------------------------------------------------------------
-    Paul Sharp 26/10/2017
+    Paul Sharp 08/08/2018
     """
 
-    assert chemdash.vasp_calc.populate_points_with_vacancies(STO_atoms, vacancy_points) == STOX_structure
+    num_vacancies = len(vacancy_positions)
+
+    if num_vacancies > 0:
+        structure.extend(ase.Atoms("X" + str(num_vacancies),
+                                   cell=structure.get_cell(),
+                                   scaled_positions=vacancy_positions,
+                                   charges=[0] * num_vacancies,
+                                   pbc=[True, True, True]))
+
+    return structure
