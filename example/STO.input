@@ -1,0 +1,31 @@
+  # General inputs
+  #
+  grid_type=orthorhombic
+  temp=0.025
+  grid_points=2,2,3
+  cell_spacing=1.0
+  atom_rankings=random
+  vacancy_separation=1.0
+  vacancy_exclusion_radius=2.0
+  max_structures=10
+  #
+  # GULP inputs
+  #
+  calculator=gulp
+  gulp_executable=gulp
+  calculator_time_limit=300
+  num_calc_stages=2
+  gulp_files=conj, bfgs
+  gulp_library=ff.lib
+  #
+  # GULP Keywords and Options
+  #
+  gulp_keywords=opti, c6, pot, conp
+  gulp_calc_1_keywords=conj
+  gulp_calc_2_keywords=lbfgs
+  #
+  gulp_options=time 5 minutes
+  gulp_calc_1_options=stepmx 0.1
+  gulp_calc_2_options=stepmx 0.5, lbfgs_order 5000, maxcyc 1000
+  #
+  #
