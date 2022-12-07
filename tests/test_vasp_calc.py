@@ -16,22 +16,21 @@ import time
 #===========================================================================================================================================================
 #Tests
 
-@pytest.mark.parametrize("structure, num_calcs, main_settings, additional_settings, max_convergence_calcs, expected_output", [
-     (chemdash.master_code.Structure(index=0, labels=[], atoms=
+@pytest.mark.parametrize("structure, num_calcs, main_settings, additional_settings, max_convergence_calcs, save_outcar, expected_output", [
+     (chemdash.master_code.Structure(index = 0, volume = 7.999999999999998, labels = [], atoms=
                 ase.Atoms(symbols = "SrTiO3", cell = [2.0, 2.0, 2.0],
                 charges = [2.0, 4.0, -2.0, -2.0, -2.0],
                 scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
                 pbc=[True, True, True])),
-      2, {}, [{}, {}], 1,
-      (chemdash.master_code.Structure(index=0, labels=[], atoms=
+      2, {}, [{}, {}], 1, False,
+      (chemdash.master_code.Structure(index = 0, volume = 7.999999999999998, labels = [], atoms=
                  ase.Atoms(symbols = "SrTiO3", cell = [2.0, 2.0, 2.0],
                  charges = [2.0, 4.0, -2.0, -2.0, -2.0],
                  scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
-                 pbc=[True, True, True])), "unconverged", 0.0))
+                 pbc=True)), "unconverged", 0.0))
 ])
 
-@pytest.mark.xfail
-def test_multi_stage_vasp_calc(structure, num_calcs, main_settings, additional_settings, max_convergence_calcs,  expected_output, monkeypatch):
+def test_multi_stage_vasp_calc(structure, num_calcs, main_settings, additional_settings, max_convergence_calcs,  expected_output, save_outcar, monkeypatch):
     """
     GIVEN a structure and set of vasp settings
 
@@ -53,9 +52,11 @@ def test_multi_stage_vasp_calc(structure, num_calcs, main_settings, additional_s
         List of extra VASP settings for individual stages of the calculation.
     max_convergence_calcs : int
         The maximum number of VASP calculations run for the final stage -- after this the calculation is considered unconverged.
+    save_outcar : bool
+        If true, retains final OUTCAR file as "OUTCAR_[structure_index]".
 
     ---------------------------------------------------------------------------
-    Paul Sharp 25/06/2019
+    Paul Sharp 07/12/2022
     """
 
     # Need to patch all file operations -- we don't want to perform any during tests
@@ -73,26 +74,17 @@ def test_multi_stage_vasp_calc(structure, num_calcs, main_settings, additional_s
                                (ase.Atoms(symbols = "SrTiO3",
                                           cell = [2.0, 2.0, 2.0], charges = [2.0, 4.0, -2.0, -2.0, -2.0],
                                           scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
-                                          pbc=[True, True, True]), 10.0, "")])
+                                          pbc=[True, True, True]), 0.0, "")])
 
     monkeypatch.setattr(chemdash.vasp_calc, 'run_vasp', lambda x1, x2 : mock_run())
 
     # Patch the vasp_time -- not predictable during test
     monkeypatch.setattr(time, 'time', lambda : 0.0)
 
-    assert chemdash.vasp_calc.multi_stage_vasp_calc(structure, num_calcs, "", main_settings, additional_settings, max_convergence_calcs) == expected_output
-
-
-# NEED TO CAREFULLY CONSIDER THE TESTS THAT WE NEED FOR THIS ROUTINE -- MAY BE A LARGE NUMBER.
-
-# Start with one calculation -- only tests later part of calc loop
-
-#Can get away without patching "check_float()", but will need to patch "converged_in_one_scf_cycle()"
-
-
-
-
-
+    # These are different instances of the same class, so we should compare the contents rather than compare them directly
+    output = chemdash.vasp_calc.multi_stage_vasp_calc(structure, num_calcs, "", main_settings, additional_settings, max_convergence_calcs, save_outcar)
+    assert output[0].__dict__ == expected_output[0].__dict__
+    assert output[1:] == expected_output[1:]
 
 
 #===========================================================================================================================================================
