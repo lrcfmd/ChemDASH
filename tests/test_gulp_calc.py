@@ -3,6 +3,12 @@ import mock
 
 import chemdash.gulp_calc
 
+try:
+    from ase.calculators.gulp import GULP
+except ImportError:
+    from ase.calculators.gulp import Gulp as GULP
+
+
 import ase
 from ase.calculators.gulp import GULP
 import numpy as np
@@ -32,11 +38,9 @@ import subprocess
      (ase.Atoms(symbols = "SrTiO3", cell = [2.0, 2.0, 2.0], charges = [2.0, 4.0, -2.0, -2.0, -2.0],
                 scaled_positions = ([0.75, 0.75, 0.25], [0.75, 0.25, 0.25], [0.5, 0.5, 0.5], [0.5, 0.0, 0.0], [0.0, 0.0, 0.5]),
                 pbc=[True, True, True]),
-      -31.71670925, "", ["gulp.gin", "gulp.got", "gulp.res"])),
+      -31.71670925, "", "", {'input': 'gulp.gin', 'output': 'gulp.got', 'restart': 'gulp.res'})),
 ])
 
-#Need to find a way to determine the calculator matches what is expected
-@pytest.mark.xfail
 def test_run_gulp(STO_atoms, gulp_keywords, gulp_options, gulp_shells, gulp_library, gulp_conditions, expected_output, monkeypatch):
     """
     GIVEN a structure and a set of gulp options
@@ -61,20 +65,21 @@ def test_run_gulp(STO_atoms, gulp_keywords, gulp_options, gulp_shells, gulp_libr
         A list of symbols for each atom if they are not wanted to be the same as in the original atoms object
 
     ---------------------------------------------------------------------------
-    Paul Sharp 16/01/2018
+    Paul Sharp 07/12/2022
     """
 
     monkeypatch.setattr(STO_atoms, 'get_potential_energy', lambda : -158.58354625)
+    monkeypatch.setattr(GULP, 'get_Gnorm', lambda x : "")
     monkeypatch.setattr(os.path, 'isfile', lambda x : True)
 
     monkeypatch.setattr(chemdash.gulp_calc, 'read_outcome', lambda x : "Optimisation Achieved")
     monkeypatch.setattr(chemdash.gulp_calc, 'check_timed_out', lambda x : False)
 
-    output = chemdash.gulp_calc.run_gulp(STO_atoms, "gulp", "", gulp_keywords, gulp_options, gulp_shells, gulp_library)
- 
-    assert output == expected_output
-    assert STO_atoms.get_calculator() == Gulp(filename = "gulp", keywords = gulp_keywords, options = gulp_options,
-                                              shells = gulp_shells, library = gulp_library, conditions = gulp_conditions)
+    output = chemdash.gulp_calc.run_gulp(STO_atoms, "gulp", "", gulp_keywords, gulp_options, gulp_shells, gulp_library, gulp_conditions)
+
+    assert output == expected_output   
+    assert STO_atoms.get_calculator().__dict__ == GULP(label = "gulp", keywords = gulp_keywords, options = gulp_options,
+                                                       shel = gulp_shells, library = gulp_library, conditions = gulp_conditions).__dict__
 
 
 #===========================================================================================================================================================
@@ -85,14 +90,14 @@ def test_run_gulp(STO_atoms, gulp_keywords, gulp_options, gulp_shells, gulp_libr
                 pbc=[True, True, True]),
       -31.71670925, "", ["gulp.gin", "gulp.got", "gulp.res"])),
 ])
-@pytest.mark.xfail
-def test_run_gulp_exception(STO_atoms, gulp_keywords, gulp_options, gulp_shells, gulp_library, gulp_conditions, expected_output, monkeypatch):
+
+def test_run_gulp_warning(STO_atoms, gulp_keywords, gulp_options, gulp_shells, gulp_library, gulp_conditions, expected_output, capfd, monkeypatch):
     """
     GIVEN a structure and a set of gulp options, including shells
 
     WHEN we run a gulp calculation, but do not have a restart file
 
-    THEN we raise an exception.
+    THEN we print a warning.
 
     Parameters
     ----------
@@ -110,7 +115,7 @@ def test_run_gulp_exception(STO_atoms, gulp_keywords, gulp_options, gulp_shells,
         A list of symbols for each atom if they are not wanted to be the same as in the original atoms object
 
     ---------------------------------------------------------------------------
-    Paul Sharp 18/01/2018
+    Paul Sharp 07/12/2022
     """
 
     # Make sure we follow path where the restart file does not exist
@@ -118,8 +123,11 @@ def test_run_gulp_exception(STO_atoms, gulp_keywords, gulp_options, gulp_shells,
 
     STO_atoms.set_calculator(GULP())
 
-    with pytest.raises(RuntimeError):
-        chemdash.gulp_calc.run_gulp(STO_atoms, "gulp", "", gulp_keywords, gulp_options, gulp_shells, gulp_library, gulp_conditions)
+    chemdash.gulp_calc.run_gulp(STO_atoms, "gulp", "", gulp_keywords, gulp_options, gulp_shells, gulp_library, gulp_conditions)
+
+    # Use the "capfd" built in fixture to capture the standard output
+    out, err = capfd.readouterr()
+    assert out == 'WARNING for "gulp" -- shells are used in this GULP calculation, but a ".res" file was not generated in the previous stage of the calculation.\nThis means that the positions of the shells cannot be tracked accurately. Please specify "dump <restart>.res" in the "gulp_options".\n'
 
 
 #===========================================================================================================================================================
