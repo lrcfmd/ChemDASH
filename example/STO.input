@@ -16,7 +16,7 @@
   calculator_time_limit=300
   num_calc_stages=2
   gulp_files=conj, bfgs
-  gulp_library=ff.lib
+  gulp_library=STO.lib
   #
   # GULP Keywords and Options
   #
@@ -27,5 +27,4 @@
   gulp_options=time 5 minutes
   gulp_calc_1_options=stepmx 0.1
   gulp_calc_2_options=stepmx 0.5, lbfgs_order 5000, maxcyc 1000
-  #
   #
