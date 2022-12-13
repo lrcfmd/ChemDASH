@@ -11,41 +11,25 @@ We acknowledge funding from the EPSRC Programme Grant: EP/N004884/1 "Integration
 Introduction
 ============
 
-ChemDASH is a crystal structure prediction code written by Paul Sharp and developed at the
-University of Liverpool. ChemDASH is written in python 3.5+, and depends
-on the atomic simulation environment (ASE), spglib, and their subsequent dependencies. ChemDASH implements
-the basin hopping method to explore the potential energy surface, with
-atom swaps used to generate new structures. Atoms can be swapped at
-random, or we can use the method of *directed swapping* to rank each
-atom according to its chemical environment, with atoms in the least
-favourable environments prioritised for swapping. Structures in ChemDASH
-can be initialised by populating cation and anion sites on
-initialisation grids, or from a CIF file. Structural optimisation can be
-done using either the GULP or VASP packages.
+ChemDASH is a crystal structure prediction code written by Paul Sharp and developed at the University of Liverpool. ChemDASH is written in python 3.5+, and depends
+on the atomic simulation environment (ASE), spglib, and their subsequent dependencies. ChemDASH implements the basin hopping method to explore the potential energy surface, with atom swaps used to generate new structures. Atoms can be swapped at random, or we can use the method of *directed swapping* to rank each atom according to its chemical environment, with atoms in the least favourable environments prioritised for swapping. Structures in ChemDASH can be initialised by populating cation and anion sites on initialisation grids, or from a CIF file. Structural optimisation can be done using either the GULP or VASP packages.
 
 ChemDASH is discussed in the scientific paper:
 
 Paul M. Sharp, Matthew S. Dyer, George R. Darling, John B. Claridge and Matthew J. Rosseinsky, Chemically directed structure evolution for crystal structure prediction, Phys. Chem. Chem. Phys., 2020, 22, 18205-18218, https://pubs.rsc.org/en/content/articlelanding/2020/cp/d0cp02206c
 
+Please cite this paper in any publications arising from your use of ChemDASH.
+
 Usage
 =====
 
-To run a ChemDASH calculation, two input files are required: a “.atoms”
-file and a “.input” file. By default they must both have the same
-basename. With valid files and a copy of ChemDASH in the current working
-directory, ChemDASH is run by typing:
+To run a ChemDASH calculation, two input files are required: a “.atoms” file and a “.input” file. By default they must both have the same basename. With valid files and a copy of ChemDASH in the current working directory, ChemDASH is run by typing:
 
       python chemdash <basename>
 
-where \<basename> is the basename of both the “.atoms” and “.input” files.
-The output of the calculation is written to the file “\<basename>.chemdash”.
-If there are errors in either the “.atoms” or the “.input” files, then the
-calculation is stopped, with errors listed in the file “\<basename>.error”.
-To restart a ChemDASH run, with a restart file present, run with
-“restart=True” in the input file.\
+where \<basename> is the basename of both the “.atoms” and “.input” files. The output of the calculation is written to the file “\<basename>.chemdash”. If there are errors in either the “.atoms” or the “.input” files, then the calculation is stopped, with errors listed in the file “\<basename>.error”. To restart a ChemDASH run, with a restart file present, run with “restart=True” in the input file.\
 \
-ChemDASH does not have to be installed in the working directory, in this
-case, run ChemDASH with:
+ChemDASH does not have to be installed in the working directory, in this case, run ChemDASH with:
 
       python <filepath_to_ChemDASH_directory> <basename>
 
