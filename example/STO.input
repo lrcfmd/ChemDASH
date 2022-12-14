@@ -3,7 +3,7 @@
 grid_type=orthorhombic
 temp=0.025
 grid_points=2,2,3
-cell_spacing=1.0
+cell_spacing=3.5
 atom_rankings=random
 vacancy_separation=1.0
 vacancy_exclusion_radius=2.0
