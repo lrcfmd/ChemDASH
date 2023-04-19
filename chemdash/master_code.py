@@ -1094,13 +1094,14 @@ def output_list(file_object, header, list_of_floats):
 
     ---------------------------------------------------------------------------
     Paul Sharp 05/06/2020
+    Jae Evans 13/12/2022
     """
 
     file_object.write(str(header))
 
     for element in list_of_floats:
         try:
-            file_object.write(" {0:.8f}".format(element))
+            file_object.write(f"{element}")
         except ValueError:
             file_object.write(" {0}".format(element))
 
